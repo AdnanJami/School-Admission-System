@@ -64,6 +64,9 @@ namespace SchoolAdmission.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Classes");
                 });
 #pragma warning restore 612, 618
