@@ -22,3 +22,11 @@
   id on GET /holds/{holdId} returns 404 with `{ "error": "Hold not found." }`.
 - **Invalid HOLD_DURATION_SECONDS** (non-numeric, zero or negative) stops the application at
   startup with a clear error message. Unset or empty means 600 seconds.
+
+- **Request validation:** class names are limited to 200 characters (longer names return 400).
+  A request without `Content-Type: application/json` (e.g. no body at all) returns 400
+  instead of the framework's default 415.
+- **Duplicate-hold safety:** besides the row lock, a partial unique index on
+  `(ClassId, StudentId)` for `Held`/`Confirmed` holds guards against a student holding twice.
+- **Startup:** the API applies pending migrations on start and retries for ~30 seconds
+  if the database is not ready yet.
