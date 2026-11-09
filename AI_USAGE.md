@@ -22,7 +22,6 @@ I reviewed and ran the code myself. I used one AI tool to review code written wi
 ## How I verified
 
 - Automated tests: a concurrency test (200 simultaneous applications for 10 seats), duplicate-confirm, same-student-twice, cancel, expiry, authorization and input-validation tests.
-- A regression test that polls the seat counts while holds are confirmed, asserting `held + confirmed <= totalSeats` in every response.
 - Running `docker compose up` from a clean state and `docker compose down` / `up` to check persistence.
 - Re-reading the brief against the code and the notes.
 - Having a second AI tool review the first one's output, then checking each finding in the code myself.

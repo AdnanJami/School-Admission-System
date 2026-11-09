@@ -141,4 +141,53 @@ public class SeatLimitTests : IClassFixture<ApiFactory>
             "/classes/c_doesnotexist/holds", Api.StudentId(1));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Seat_counts_stay_consistent_while_holds_are_confirmed()
+    {
+        var cls = await Api.CreateClass(_client, seats: 20);
+
+        var holds = new List<(HoldDto Hold, string Student)>();
+        for (var i = 0; i < 20; i++)
+        {
+            var student = Api.StudentId(i);
+            holds.Add((await Api.Apply(_client, cls.Id, student), student));
+        }
+
+        var stop = new CancellationTokenSource();
+        var violations = new List<string>();
+
+        var poller = Task.Run(async () =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                var c = await Api.GetClass(_client, cls.Id);
+                if (c.HeldSeats + c.ConfirmedSeats > c.TotalSeats || c.AvailableSeats < 0)
+                {
+                    lock (violations)
+                        violations.Add($"held={c.HeldSeats} confirmed={c.ConfirmedSeats} available={c.AvailableSeats}");
+                }
+            }
+        });
+
+        var gate = new TaskCompletionSource();
+        var confirms = holds.Select(h => Task.Run(async () =>
+        {
+            await gate.Task;
+            return await Api.Send(_client, HttpMethod.Post, $"/holds/{h.Hold.HoldId}/confirm", h.Student);
+        })).ToList();
+
+        gate.SetResult();
+        var responses = await Task.WhenAll(confirms);
+
+        stop.Cancel();
+        await poller;
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+        Assert.Empty(violations);
+
+        var after = await Api.GetClass(_client, cls.Id);
+        Assert.Equal(20, after.ConfirmedSeats);
+        Assert.Equal(0, after.HeldSeats);
+    }
 }
