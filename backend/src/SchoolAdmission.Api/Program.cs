@@ -54,9 +54,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
 app.UseCors();
+app.UseAuthorization();
+
 app.MapControllers();
 await DatabaseMigrator.MigrateWithRetryAsync(app.Services, app.Logger);
 app.Run();

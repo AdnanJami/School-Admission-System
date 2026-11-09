@@ -57,36 +57,18 @@ public class ClassesController : ControllerBase
 
         return CreatedAtAction(nameof(GetById), new { classId = schoolClass.Id }, response);
     }
-
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var now = DateTime.UtcNow;
+        var classes = await _db.Classes.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
+        var counts = await GetSeatCountsAsync();
 
-        var classes = await _db.Classes.AsNoTracking().ToListAsync();
-
-        var heldCounts = await _db.Holds.AsNoTracking()
-            .Where(h => h.Status == HoldStatus.Held && h.ExpiresAt > now)
-            .GroupBy(h => h.ClassId)
-            .Select(g => new { ClassId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.ClassId, x => x.Count);
-
-        var confirmedCounts = await _db.Holds.AsNoTracking()
-            .Where(h => h.Status == HoldStatus.Confirmed)
-            .GroupBy(h => h.ClassId)
-            .Select(g => new { ClassId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.ClassId, x => x.Count);
-
-        var result = classes.Select(c => ToDetails(
-            c,
-            heldCounts.GetValueOrDefault(c.Id),
-            confirmedCounts.GetValueOrDefault(c.Id)));
-
-        await _db.Classes.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
-
-        return Ok(result);
+        return Ok(classes.Select(c =>
+        {
+            counts.TryGetValue(c.Id, out var s);
+            return ToDetails(c, s?.Held ?? 0, s?.Confirmed ?? 0);
+        }));
     }
-
     [HttpGet("{classId}")]
     public async Task<IActionResult> GetById(string classId)
     {
@@ -110,17 +92,36 @@ public class ClassesController : ControllerBase
         ConfirmedSeats = confirmed,
         AvailableSeats = c.TotalSeats - held - confirmed
     };
+    private class SeatCounts
+    {
+        public string ClassId { get; set; } = "";
+        public int Held { get; set; }
+        public int Confirmed { get; set; }
+    }
 
-    private async Task<ClassDetailsResponse> BuildDetailsAsync(SchoolClass c)
+    private async Task<Dictionary<string, SeatCounts>> GetSeatCountsAsync(string? classId = null)
     {
         var now = DateTime.UtcNow;
 
-        var held = await _db.Holds.CountAsync(h =>
-            h.ClassId == c.Id && h.Status == HoldStatus.Held && h.ExpiresAt > now);
+        var rows = await _db.Database
+            .SqlQuery<SeatCounts>($"""
+                SELECT "ClassId",
+                    (COUNT(*) FILTER (WHERE "Status" = 'Held' AND "ExpiresAt" > {now}))::int AS "Held",
+                    (COUNT(*) FILTER (WHERE "Status" = 'Confirmed'))::int AS "Confirmed"
+                FROM "Holds"
+                WHERE ({classId}::text IS NULL OR "ClassId" = {classId})
+                AND "Status" IN ('Held', 'Confirmed')
+                GROUP BY "ClassId"
+                """)
+            .ToListAsync();
 
-        var confirmed = await _db.Holds.CountAsync(h =>
-            h.ClassId == c.Id && h.Status == HoldStatus.Confirmed);
+        return rows.ToDictionary(r => r.ClassId);
+    }
 
-        return ToDetails(c, held, confirmed);
+    private async Task<ClassDetailsResponse> BuildDetailsAsync(SchoolClass c)
+    {
+        var counts = await GetSeatCountsAsync(c.Id);
+        counts.TryGetValue(c.Id, out var s);
+        return ToDetails(c, s?.Held ?? 0, s?.Confirmed ?? 0);
     }
 }
