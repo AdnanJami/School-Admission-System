@@ -32,6 +32,15 @@ if (!string.IsNullOrWhiteSpace(rawDuration))
 }
 
 builder.Services.AddSingleton(new HoldSettings { DurationSeconds = holdDurationSeconds });
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy => policy
+        .AllowAnyOrigin()
+        .AllowAnyHeader()   
+        .AllowAnyMethod()); 
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -47,7 +56,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
+app.UseCors();
 app.MapControllers();
 await DatabaseMigrator.MigrateWithRetryAsync(app.Services, app.Logger);
 app.Run();
+public partial class Program { }

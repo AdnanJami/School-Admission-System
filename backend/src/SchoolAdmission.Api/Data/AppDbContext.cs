@@ -14,12 +14,20 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Hold>()
-            .Property(h => h.Status)
-            .HasConversion<string>();
+    modelBuilder.Entity<Hold>()
+        .Property(h => h.Status)
+        .HasConversion<string>();          
 
-        modelBuilder.Entity<SchoolClass>()
-            .HasIndex(c => c.Name)
-            .IsUnique();
+    modelBuilder.Entity<SchoolClass>()
+        .HasIndex(c => c.Name)
+        .IsUnique();
+
+    modelBuilder.Entity<Hold>()
+        .HasIndex(h => new { h.ClassId, h.StudentId })
+        .IsUnique()
+        .HasFilter("\"Status\" IN ('Held','Confirmed')");
+
+    modelBuilder.Entity<Hold>().HasIndex(h => new { h.ClassId, h.Status });
+    modelBuilder.Entity<Hold>().HasIndex(h => h.StudentId);
     }
 }

@@ -82,6 +82,8 @@ public class ClassesController : ControllerBase
             heldCounts.GetValueOrDefault(c.Id),
             confirmedCounts.GetValueOrDefault(c.Id)));
 
+        await _db.Classes.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
+
         return Ok(result);
     }
 

@@ -1,7 +1,6 @@
 # Assumptions
 
-- **Class names are not unique.** Classes are identified by `id`. Two classes may
-  have the same name (e.g. parallel sections). Names are trimmed before saving.
+- **Class names are unique.** (after trimming, case-sensitive). Creating a duplicate returns 409. Rationale: two classes with the same name would be indistinguishable in the UI.
 - **Expired holds do not count as held seats.** A hold with `Status = Held` and
   `ExpiresAt <= now` is ignored when computing `heldSeats`, even if no background
   job has marked it `Expired` yet.
@@ -15,9 +14,7 @@
 - **A student may have only one active (Held or Confirmed) hold per class.** After an
   Expired or Cancelled hold, they can hold again.
 
-- **Order of checks on POST /classes/{classId}/holds:** the `X-Student-Id` header is
-  validated first (400), before the class is looked up. A request with a bad header and an
-  unknown class id therefore returns 400, not 404.
+
 - **Unknown class id returns 404** with `{ "error": "Class not found." }`; an unknown hold
   id on GET /holds/{holdId} returns 404 with `{ "error": "Hold not found." }`.
 - **Invalid HOLD_DURATION_SECONDS** (non-numeric, zero or negative) stops the application at
@@ -30,3 +27,5 @@
   `(ClassId, StudentId)` for `Held`/`Confirmed` holds guards against a student holding twice.
 - **Startup:** the API applies pending migrations on start and retries for ~30 seconds
   if the database is not ready yet.
+
+- Multiple backend instances: every apply runs in a transaction that locks the class row with SELECT ... FOR UPDATE. The lock lives in PostgreSQL, not in app memory, so two processes on the same database serialize per class. Seats are counted inside that lock, so held + confirmed can never exceed totalSeats. Confirm and cancel are single conditional UPDATEs, so they are atomic and idempotent.

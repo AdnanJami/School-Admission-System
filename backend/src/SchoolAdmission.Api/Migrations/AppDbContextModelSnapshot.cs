@@ -47,6 +47,14 @@ namespace SchoolAdmission.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("ClassId", "Status");
+
+                    b.HasIndex("ClassId", "StudentId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" IN ('Held','Confirmed')");
+
                     b.ToTable("Holds");
                 });
 
