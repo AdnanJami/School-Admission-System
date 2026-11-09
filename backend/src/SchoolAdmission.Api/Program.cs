@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolAdmission.Api;
 using System.Globalization;
 using SchoolAdmission.Api.Config;
-
+using SchoolAdmission.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -13,7 +13,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-
+builder.Services.AddHostedService<HoldExpiryService>();
 // Read and validate the hold duration once, at startup
 var rawDuration = builder.Configuration["HOLD_DURATION_SECONDS"];
 var holdDurationSeconds = 600;

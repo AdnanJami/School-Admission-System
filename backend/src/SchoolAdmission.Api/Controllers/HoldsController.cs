@@ -121,4 +121,126 @@ public class HoldsController : ControllerBase
             ExpiresAt = hold.ExpiresAt
         });
     }
+    [HttpPost("holds/{holdId}/confirm")]
+    public async Task<IActionResult> ConfirmHold(string holdId)
+    {
+        if (!StudentIdHeader.TryGet(Request, out var studentId))
+        {
+            return BadRequest(new ErrorResponse(StudentIdHeader.ErrorMessage));
+        }
+
+        var now = DateTime.UtcNow;
+
+        var rows = await _db.Holds
+            .Where(h => h.Id == holdId
+                        && h.StudentId == studentId
+                        && h.Status == HoldStatus.Held
+                        && h.ExpiresAt > now)
+            .ExecuteUpdateAsync(s => s.SetProperty(h => h.Status, HoldStatus.Confirmed));
+
+        var confirmed = new ConfirmHoldResponse { HoldId = holdId, Status = "CONFIRMED" };
+
+        if (rows == 1)
+        {
+            return Ok(confirmed);
+        }
+
+        var hold = await _db.Holds.AsNoTracking().FirstOrDefaultAsync(h => h.Id == holdId);
+
+        if (hold is null)
+        {
+            return NotFound(new ErrorResponse("Hold not found."));
+        }
+
+        if (hold.StudentId != studentId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ErrorResponse("This hold belongs to another student."));
+        }
+
+        if (hold.Status == HoldStatus.Confirmed)
+        {
+            return Ok(confirmed);
+        }
+
+        return Conflict(new ErrorResponse(
+            hold.Status == HoldStatus.Cancelled ? "Hold was cancelled." : "Hold has expired."));
+    }
+
+    [HttpDelete("holds/{holdId}")]
+    public async Task<IActionResult> CancelHold(string holdId)
+    {
+        if (!StudentIdHeader.TryGet(Request, out var studentId))
+        {
+            return BadRequest(new ErrorResponse(StudentIdHeader.ErrorMessage));
+        }
+
+        var now = DateTime.UtcNow;
+
+        var rows = await _db.Holds
+            .Where(h => h.Id == holdId
+                        && h.StudentId == studentId
+                        && h.Status == HoldStatus.Held
+                        && h.ExpiresAt > now)
+            .ExecuteUpdateAsync(s => s.SetProperty(h => h.Status, HoldStatus.Cancelled));
+
+        if (rows == 1)
+        {
+            return NoContent();
+        }
+
+        var hold = await _db.Holds.AsNoTracking().FirstOrDefaultAsync(h => h.Id == holdId);
+
+        if (hold is null)
+        {
+            return NotFound(new ErrorResponse("Hold not found."));
+        }
+
+        if (hold.StudentId != studentId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ErrorResponse("This hold belongs to another student."));
+        }
+
+        if (hold.Status == HoldStatus.Cancelled)
+        {
+            return NoContent();
+        }
+
+        return Conflict(new ErrorResponse(
+            hold.Status == HoldStatus.Confirmed
+                ? "A confirmed hold cannot be cancelled."
+                : "Hold has expired."));
+    }
+
+    [HttpGet("me/holds")]
+    public async Task<IActionResult> GetMyHolds()
+    {
+        if (!StudentIdHeader.TryGet(Request, out var studentId))
+        {
+            return BadRequest(new ErrorResponse(StudentIdHeader.ErrorMessage));
+        }
+
+        var rows = await (
+            from h in _db.Holds.AsNoTracking()
+            join c in _db.Classes.AsNoTracking() on h.ClassId equals c.Id
+            where h.StudentId == studentId
+            orderby h.CreatedAt descending
+            select new { Hold = h, ClassName = c.Name }
+        ).ToListAsync();
+
+        var now = DateTime.UtcNow;
+
+        var result = rows.Select(r => new MyHoldResponse
+        {
+            HoldId = r.Hold.Id,
+            ClassId = r.Hold.ClassId,
+            ClassName = r.ClassName,
+            Status = HoldStatusHelper.ToApiString(
+                HoldStatusHelper.GetEffectiveStatus(r.Hold, now)),
+            ExpiresAt = r.Hold.ExpiresAt
+        });
+
+        return Ok(result);
+    }
 }

@@ -3,6 +3,8 @@ namespace SchoolAdmission.Api.Helpers;
 public static class StudentIdHeader
 {
     public const string HeaderName = "X-Student-Id";
+    public const string ErrorMessage =
+    "X-Student-Id header is required and must be exactly 17 digits.";
 
     // Returns true only if the header is present once and is exactly 17 digits (0-9).
     public static bool TryGet(HttpRequest request, out string studentId)
