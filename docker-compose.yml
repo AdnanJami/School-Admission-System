@@ -8,10 +8,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      - dbdata:/var/lib/postgresql/data
 
   api:
     build: ./backend/src/SchoolAdmission.Api
@@ -22,3 +19,6 @@ volumes:
       HOLD_DURATION_SECONDS: "600"
     depends_on:
       - db
+
+volumes:
+  dbdata:

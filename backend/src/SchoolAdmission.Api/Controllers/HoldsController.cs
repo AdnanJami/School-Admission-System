@@ -19,7 +19,8 @@ public class HoldsController : ControllerBase
     }
 
     [HttpPost("classes/{classId}/holds")]
-    public async Task<IActionResult> CreateHold(string classId)
+    public async Task<IActionResult> CreateHold(string classId,
+    [FromHeader(Name = "X-Student-Id")] string? studentIdHeader = null)
     {
         // 1. Validate header
         if (!StudentIdHeader.TryGet(Request, out var studentId))
@@ -122,7 +123,8 @@ public class HoldsController : ControllerBase
         });
     }
     [HttpPost("holds/{holdId}/confirm")]
-    public async Task<IActionResult> ConfirmHold(string holdId)
+    public async Task<IActionResult> ConfirmHold(string holdId,
+    [FromHeader(Name = "X-Student-Id")] string? studentIdHeader = null)
     {
         if (!StudentIdHeader.TryGet(Request, out var studentId))
         {
@@ -168,7 +170,8 @@ public class HoldsController : ControllerBase
     }
 
     [HttpDelete("holds/{holdId}")]
-    public async Task<IActionResult> CancelHold(string holdId)
+    public async Task<IActionResult> CancelHold(string holdId,
+    [FromHeader(Name = "X-Student-Id")] string? studentIdHeader = null)
     {
         if (!StudentIdHeader.TryGet(Request, out var studentId))
         {
@@ -214,7 +217,7 @@ public class HoldsController : ControllerBase
     }
 
     [HttpGet("me/holds")]
-    public async Task<IActionResult> GetMyHolds()
+    public async Task<IActionResult> GetMyHolds([FromHeader(Name = "X-Student-Id")] string? studentIdHeader = null)
     {
         if (!StudentIdHeader.TryGet(Request, out var studentId))
         {
