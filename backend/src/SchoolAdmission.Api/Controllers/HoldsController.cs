@@ -251,4 +251,34 @@ public class HoldsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("admin/holds")]
+    public async Task<IActionResult> GetAllHolds([FromQuery] int limit = 500)
+    {
+        limit = Math.Clamp(limit, 1, 2000);
+
+        var rows = await (
+            from h in _db.Holds.AsNoTracking()
+            join c in _db.Classes.AsNoTracking() on h.ClassId equals c.Id
+            orderby h.CreatedAt descending
+            select new { Hold = h, ClassName = c.Name }
+        ).Take(limit).ToListAsync();
+
+        var now = DateTime.UtcNow;
+
+        var result = rows.Select(r => new AdminHoldResponse
+        {
+            HoldId = r.Hold.Id,
+            ClassId = r.Hold.ClassId,
+            ClassName = r.ClassName,
+            StudentId = r.Hold.StudentId,
+            Status = HoldStatusHelper.ToApiString(
+                HoldStatusHelper.GetEffectiveStatus(r.Hold, now)),
+            ExpiresAt = r.Hold.ExpiresAt,
+            CreatedAt = r.Hold.CreatedAt
+        });
+
+        return Ok(result);
+    }
+
 }

@@ -190,4 +190,40 @@ public class SeatLimitTests : IClassFixture<ApiFactory>
         Assert.Equal(20, after.ConfirmedSeats);
         Assert.Equal(0, after.HeldSeats);
     }
+
+    [Fact]
+public async Task Student_with_confirmed_admission_cannot_apply_again_to_same_class()
+{
+    var cls = await Api.CreateClass(_client, seats: 5);
+    var student = Api.StudentId(1);
+    var hold = await Api.Apply(_client, cls.Id, student);
+    await Api.Send(_client, HttpMethod.Post, $"/holds/{hold.HoldId}/confirm", student);
+
+    var again = await Api.Send(_client, HttpMethod.Post, $"/classes/{cls.Id}/holds", student);
+
+    Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    var after = await Api.GetClass(_client, cls.Id);
+    Assert.Equal(1, after.ConfirmedSeats);
+    Assert.Equal(0, after.HeldSeats);
+}
+
+    [Fact]
+    public async Task Same_student_applying_concurrently_gets_only_one_hold()
+    {
+        var cls = await Api.CreateClass(_client, seats: 5);
+        var student = Api.StudentId(1);
+
+        var gate = new TaskCompletionSource();
+        var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
+        {
+            await gate.Task;
+            return await Api.Send(_client, HttpMethod.Post, $"/classes/{cls.Id}/holds", student);
+        })).ToList();
+        gate.SetResult();
+        var responses = await Task.WhenAll(tasks);
+
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.Created));
+        Assert.Equal(19, responses.Count(r => r.StatusCode == HttpStatusCode.Conflict));
+        Assert.Equal(1, (await Api.GetClass(_client, cls.Id)).HeldSeats);
+    }
 }

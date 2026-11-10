@@ -23,3 +23,8 @@ export interface MyHold extends Hold {
 export interface CreatedHold extends Hold {
   studentId: string
 }
+
+export interface AdminHold extends MyHold {
+  studentId: string
+  createdAt: string
+}

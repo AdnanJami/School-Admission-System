@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { CreatedHold, Hold, MyHold, SchoolClass } from './types'
+import type { AdminHold, CreatedHold, Hold, MyHold, SchoolClass } from './types'
 import { useStudent } from '../state/student'
 
 export function useClasses() {
@@ -22,6 +22,18 @@ export function useMyHolds() {
   })
 }
 
+export const ADMIN_HOLDS_LIMIT = 500
+
+/** Admin view: every application of every student (latest first). */
+export function useAllHolds() {
+  return useQuery({
+    queryKey: ['allHolds'],
+    queryFn: () => api<AdminHold[]>(`/admin/holds?limit=${ADMIN_HOLDS_LIMIT}`),
+    refetchInterval: 5000,
+    placeholderData: keepPreviousData,
+  })
+}
+
 export function useHold(holdId: string | undefined) {
   return useQuery({
     queryKey: ['hold', holdId],
@@ -38,6 +50,7 @@ function useRefreshAll() {
     void qc.invalidateQueries({ queryKey: ['classes'] })
     void qc.invalidateQueries({ queryKey: ['myHolds'] })
     void qc.invalidateQueries({ queryKey: ['hold'] })
+    void qc.invalidateQueries({ queryKey: ['allHolds'] })
   }
 }
 

@@ -41,7 +41,27 @@
 - **Seat counts are read in one SQL statement.** `GET /classes` and `GET /classes/{id}` compute held and confirmed together from a single snapshot. Using separate queries could count a hold that is confirmed in between twice, briefly showing `held + confirmed > totalSeats`.
 - Because requests wait on the row lock while holding a database connection, a burst of thousands of applicants queues up. The compose file sets `Maximum Pool Size=100;Timeout=60` on the API connection string so waiting requests are not rejected, and raises PostgreSQL `max_connections` to 300 so two API processes fit.
 - **Two-process verification.** I ran two API instances on ports `8080` and `8081` against the same PostgreSQL database. I sent 20 concurrent hold requests for the same one-seat class, with 10 requests to each instance and a distinct student ID for each request. One request returned `201 Created` and 19 returned `409 Conflict`. A read from port `8081` returned `totalSeats = 1`, `heldSeats = 1`, `confirmedSeats = 0`, and `availableSeats = 0`, confirming that `heldSeats + confirmedSeats` stayed within the seat limit in this test.
-
+## Admin
+- since its admin they can see all the application made in that school.
+- latest first, with filters
+- didnt add authentication for simplycity.
 ## Startup and persistence
 - The API applies pending migrations on startup and retries for about 30 seconds if the database is not ready yet.
 - Data lives in the `dbdata` Docker volume and survives `docker compose down` / `up`. `docker compose down -v` deletes it.
+## Frontend
+
+- **Student identity** is the 17-digit birth registration number typed at the top of the page. It is checked in the browser (exactly 17 digits) and kept in `localStorage`, so a refresh or reopening the browser keeps the student and, through `GET /me/holds`, all of their applications. There is no login, as the brief says.
+- **Seat counts refresh every 3 seconds**; `/me/holds` every 5 seconds; an application that is still `HELD` is re-read every 2 seconds. Polling pauses while the browser tab is hidden.
+- **Countdown uses the browser clock.** The API returns `expiresAt` but no server time, and the `Date` header is not readable from the browser across origins, so remaining time is `expiresAt - now` on the client. When it reaches zero the page shows `EXPIRED` immediately, disables "Pay Admission Fee" and asks the server once; the server stays authoritative (confirm and cancel are checked there). If a computer's clock is far off, the timer shown can be off by the same amount.
+- **Apply button** is disabled when the class is full, when no student ID is entered, or while another apply is in flight. If the student already has a `HELD` (unexpired) or `CONFIRMED` application in that class, it becomes "View application". The server still enforces all of this.
+- **Cancel asks for confirmation** in the page (a second click) so a seat is not released by accident. A confirmed admission cannot be cancelled (the API returns 409).
+- **Pay / Cancel buttons are disabled** while a request is running, so double clicks do not send duplicate requests. Duplicate requests are also safe on the server.
+- **Errors** are shown as plain-language messages. The backend's `{ "error": ... }` text is shown as is; ASP.NET validation errors are joined; network failures show "Cannot reach the server" plus a banner that clears when the connection returns. Pages never go blank: an error boundary catches unexpected failures.
+- **Admin page** has no login, anyone who opens it can create a class. Class names must be unique (API returns 409) and seats must be a whole number of at least 1.
+- **Backend URL** is read at runtime from `/config.js`, which the frontend container regenerates from the `API_URL` environment variable on start. The browser calls the backend directly, so `API_URL` must be reachable from the browser (default `http://localhost:8080`), not a Docker-internal name.
+## Guardian and admin views
+
+- The app has two areas: the **guardian view** (`/`: classes, apply, my applications, pay / cancel) and the **admin view** (`/admin`), reached with the "Admin" button at the top of the guardian view. Anyone who knows the URL can open the admin view; a real system would protect it with authentication.
+- The admin view has three tabs: **Class List** (live seat counts and totals), **Create Class**, and **All Applications** (every student's applications with status, time left and apply time; filter by status, class and student number; refreshes every 5 seconds).
+- The brief's 8 endpoints cannot list other students' applications, so the backend has one **extra endpoint, `GET /admin/holds`** (optional `?limit=`, default 500, max 2000, latest first). It needs no `X-Student-Id`. It does not change any of the 8 specified endpoints or their fields.
+- Statuses in this list are computed the same way as everywhere else: a hold that is still `HELD` but past its expiry is reported as `EXPIRED`.

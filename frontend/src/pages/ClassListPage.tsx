@@ -50,9 +50,7 @@ export function ClassListPage() {
 
       {classes.isPending && <p>Loading classes…</p>}
       {classes.data && classes.data.length === 0 && (
-        <p>
-          No classes yet. A school admin can add one on the <Link to="/admin">Create Class</Link> page.
-        </p>
+        <p>No classes are open for admission yet. Please check back soon.</p>
       )}
 
       {classes.data && classes.data.length > 0 && (

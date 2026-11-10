@@ -62,7 +62,7 @@ export function AdminPage() {
           <button type="submit" className="btn btn-primary" disabled={create.isPending}>
             {create.isPending ? 'Creating…' : 'Create class'}
           </button>{' '}
-          <Link to="/" className="btn">
+          <Link to="/admin" className="btn">
             Go to class list
           </Link>
         </div>

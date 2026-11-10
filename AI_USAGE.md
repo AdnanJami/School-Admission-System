@@ -4,8 +4,10 @@
 
 **Used for:**
 - Backend: controllers, the hold/confirm/cancel logic, EF Core migrations and the seat-count query
-- Test files, including the concurrency test
-- CORS setup, the frontend, and drafts of the documentation
+- Backend test files, including the concurrency test
+- CORS setup and drafts of the documentation
+- Frontend (Claude): the React + TypeScript UI (API client, React Query hooks, pages, countdown logic), its Vitest tests, and the frontend Dockerfile / nginx setup
+- Claude also reviewed the backend against the assignment brief and helped plan the frontend
 
 I reviewed and ran the code myself. I used one AI tool to review code written with another.
 
@@ -18,10 +20,13 @@ I reviewed and ran the code myself. I used one AI tool to review code written wi
 5. **Fix added but not used.** The AI first added the single-query helper without calling it, so the bug remained. I caught it by reading the diff before accepting it. The same helper also had a nullable-parameter problem in Postgres (`@p IS NULL` needs a `::text` cast).
 6. **Leftover dead code.** A discarded `OrderBy(...).ToListAsync()` query in `GetAll` did nothing and left the list unsorted. I found it in code review and removed it.
 7. **Connection limits not considered.** The first version did not account for requests waiting on the row lock while holding database connections. Under a burst this exhausts the default pool of 100 connections. A review pointed it out; I raised the pool size and timeout and Postgres `max_connections`.
+8. **Frontend: wrong clock-skew idea.** Claude first proposed correcting the countdown with the server's `Date` response header. That header is not readable by browser code on cross-origin requests (it is not CORS-safelisted), so it would not have worked.
+9. **Frontend: TypeScript `erasableSyntaxOnly` error.** The first `ApiError` class used a constructor parameter property (`constructor(public status: number, …)`), which the Vite TypeScript template rejects. The compiler error showed it immediately; I changed it to an explicit field.
 
 ## How I verified
 
-- Automated tests: a concurrency test (200 simultaneous applications for 10 seats), duplicate-confirm, same-student-twice, cancel, expiry, authorization and input-validation tests.
+- Automated backend tests: a concurrency test (200 simultaneous applications for 10 seats), duplicate-confirm, same-student-twice, cancel, expiry, authorization and input-validation tests.
+- Automated frontend tests (Vitest): API error handling, student ID validation and persistence, class list states, countdown expiry with Pay disabled, pay / cancel flows, admin form validation.
 - Running `docker compose up` from a clean state and `docker compose down` / `up` to check persistence.
 - Re-reading the brief against the code and the notes.
 - Having a second AI tool review the first one's output, then checking each finding in the code myself.

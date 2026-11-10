@@ -6,7 +6,7 @@ import { mockApi, renderApp } from '../test/utils'
 describe('AdminPage', () => {
   it('validates input before calling the API', async () => {
     const fetchMock = mockApi({})
-    renderApp('/admin')
+    renderApp('/admin/create')
     await userEvent.type(screen.getByLabelText('Class name'), 'Class 6')
     await userEvent.type(screen.getByLabelText('Total seats'), '0')
     await userEvent.click(screen.getByRole('button', { name: /create class/i }))
@@ -25,7 +25,7 @@ describe('AdminPage', () => {
       },
       'GET /classes': { body: [] },
     })
-    renderApp('/admin')
+    renderApp('/admin/create')
     const submit = async () => {
       await userEvent.clear(screen.getByLabelText('Class name'))
       await userEvent.type(screen.getByLabelText('Class name'), 'Class 6')
