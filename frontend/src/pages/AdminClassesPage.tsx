@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useClasses } from '../api/hooks'
-import { ErrorBanner, errorMessage } from '../components/ErrorBanner'
-
+import { ErrorBanner } from '../components/ErrorBanner'
+import { errorMessage } from '../utils/errorMessage'
 export function AdminClassesPage() {
   const classes = useClasses()
   const list = classes.data ?? []

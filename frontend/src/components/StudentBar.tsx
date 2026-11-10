@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { isValidStudentId, useStudent } from '../state/student'
-
+import { useStudent } from '../state/student'
+import { isValidStudentId } from '../utils/studentId'
 export function StudentBar() {
   const { studentId, setStudentId, clearStudentId } = useStudent()
   const [value, setValue] = useState('')

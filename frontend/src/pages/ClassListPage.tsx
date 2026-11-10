@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApply, useClasses, useMyHolds } from '../api/hooks'
-import { ErrorBanner, errorMessage } from '../components/ErrorBanner'
+import { ErrorBanner} from '../components/ErrorBanner'
 import { useStudent } from '../state/student'
 import { effectiveStatus, useNow } from '../utils/time'
-
+import { errorMessage } from '../utils/errorMessage'
 export function ClassListPage() {
   const { studentId } = useStudent()
   const classes = useClasses()

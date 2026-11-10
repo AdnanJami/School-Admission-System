@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useMyHolds } from '../api/hooks'
-import { ErrorBanner, errorMessage } from '../components/ErrorBanner'
+import { ErrorBanner } from '../components/ErrorBanner'
 import { NeedStudent } from '../components/NeedStudent'
 import { StatusBadge } from '../components/StatusBadge'
 import { useStudent } from '../state/student'
 import { effectiveStatus, formatRemaining, remainingMs, useNow } from '../utils/time'
-
+import { errorMessage } from '../utils/errorMessage'
 export function MyApplicationsPage() {
   const { studentId } = useStudent()
   const holds = useMyHolds()

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useCreateClass } from '../api/hooks'
-import { ErrorBanner, SuccessBanner, errorMessage } from '../components/ErrorBanner'
-
+import { ErrorBanner, SuccessBanner } from '../components/ErrorBanner'
+import { errorMessage } from '../utils/errorMessage'
 export function AdminPage() {
   const create = useCreateClass()
   const [name, setName] = useState('')

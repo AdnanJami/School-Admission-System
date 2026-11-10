@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCancel, useClasses, useConfirm, useHold } from '../api/hooks'
 import { ApiError } from '../api/client'
-import { ErrorBanner, SuccessBanner, errorMessage } from '../components/ErrorBanner'
+import { ErrorBanner, SuccessBanner } from '../components/ErrorBanner'
 import { StatusBadge } from '../components/StatusBadge'
 import { useStudent } from '../state/student'
 import { effectiveStatus, formatRemaining, parseUtc, remainingMs, useNow } from '../utils/time'
-
+import { errorMessage } from '../utils/errorMessage'
 export function HoldPage() {
   const { holdId } = useParams()
   const { studentId } = useStudent()

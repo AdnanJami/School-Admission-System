@@ -1,4 +1,4 @@
-const BASE = (window as any).__CONFIG__?.API_URL ?? "http://localhost:8080";
+const BASE = window.__CONFIG__?.API_URL ?? "http://localhost:8080";
 
 export class ApiError extends Error {
   status: number

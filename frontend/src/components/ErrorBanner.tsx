@@ -1,8 +1,3 @@
-export function errorMessage(err: unknown): string {
-  return err instanceof Error && err.message
-    ? err.message
-    : 'Something went wrong. Please try again.'
-}
 
 export function ErrorBanner({ message, onDismiss }: { message: string | null; onDismiss?: () => void }) {
   if (!message) return null

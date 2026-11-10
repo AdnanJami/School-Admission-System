@@ -1,11 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-
+import { isValidStudentId } from '../utils/studentId'
 const STORAGE_KEY = 'studentId'
-const PATTERN = /^\d{17}$/
 
-export function isValidStudentId(value: string): boolean {
-  return PATTERN.test(value)
-}
+
 
 function load(): string | null {
   try {

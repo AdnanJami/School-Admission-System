@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { ADMIN_HOLDS_LIMIT, useAllHolds } from '../api/hooks'
 import type { HoldStatus } from '../api/types'
-import { ErrorBanner, errorMessage } from '../components/ErrorBanner'
+import { ErrorBanner } from '../components/ErrorBanner'
 import { StatusBadge } from '../components/StatusBadge'
 import { effectiveStatus, formatRemaining, parseUtc, remainingMs, useNow } from '../utils/time'
-
+import { errorMessage } from '../utils/errorMessage'
 const STATUSES: Array<HoldStatus | 'ALL'> = ['ALL', 'HELD', 'CONFIRMED', 'EXPIRED', 'CANCELLED']
 
 export function AdminApplicationsPage() {
