@@ -12,8 +12,7 @@
 - **Duration** comes from `HOLD_DURATION_SECONDS` (default 600). A non-numeric, zero or negative value stops the app at startup with a clear error.
 - **A hold counts as held only while `Status = Held` and `ExpiresAt > now`.** Expired holds therefore free the seat immediately, even before cleanup runs. `GET /holds/{id}` and `/me/holds` likewise report such a hold as `EXPIRED`.
 - A background service also writes the `EXPIRED` status to the database every 5 seconds, so no API call is needed for seats to return to the pool.
-- **One active hold per student per class.** An active hold is `HELD` or `CONFIRMED`. After 
-`EXPIRED` or `CANCELLED` the student can apply again. A student can hold seats in different classes at the same time.
+- **One active hold per student per class.** An active hold is `HELD` or `CONFIRMED`. After `EXPIRED` or `CANCELLED` the student can apply again. A student can hold seats in different classes at the same time.
 - Applying when the class is full returns `409`; applying when the student already has an active hold in that class also returns `409`.
 
 ## Confirm and cancel
@@ -46,7 +45,6 @@
 ## Startup and persistence
 - The API applies pending migrations on startup and retries for about 30 seconds if the database is not ready yet.
 - Data lives in the `dbdata` Docker volume and survives `docker compose down` / `up`. `docker compose down -v` deletes it.
-
 
 ## Frontend
 
